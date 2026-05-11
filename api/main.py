@@ -20,8 +20,8 @@ app = FastAPI(
     title="Votage Church API",
     description="Manage church data like members, attendance, growth tracks, and more.",
     version="0.1.0",
-    docs_url="/docs",           # http://127.0.0.1:8000/api/docs
-    redoc_url="/redoc",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
 )
 
 # Add CORS middleware
@@ -33,18 +33,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include each router – they will be mounted under their own prefix
-app.include_router(auth.router)
-app.include_router(home.router)
-app.include_router(members.router)
-app.include_router(pastors.router)
-app.include_router(services.router)
-app.include_router(attendance.router)
-app.include_router(events.router)
-app.include_router(connect_groups.router)
-app.include_router(growth_track.router)
-app.include_router(departments.router)
-app.include_router(dashboard.router)
+# Include each router – they will be mounted under /api
+app.include_router(auth.router, prefix="/api")
+app.include_router(home.router, prefix="/api")
+app.include_router(members.router, prefix="/api")
+app.include_router(pastors.router, prefix="/api")
+app.include_router(services.router, prefix="/api")
+app.include_router(attendance.router, prefix="/api")
+app.include_router(events.router, prefix="/api")
+app.include_router(connect_groups.router, prefix="/api")
+app.include_router(growth_track.router, prefix="/api")
+app.include_router(departments.router, prefix="/api")
+app.include_router(dashboard.router, prefix="/api")
+
+# Mount Django Admin
+from django.core.wsgi import get_wsgi_application
+from fastapi.middleware.wsgi import WSGIMiddleware
+app.mount("/admin", WSGIMiddleware(get_wsgi_application()))
 
 
 
