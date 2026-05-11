@@ -149,3 +149,4 @@ cython_debug/
 
 # VS Code
 .vscode/
+staticfiles/

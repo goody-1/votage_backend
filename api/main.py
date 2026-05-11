@@ -8,6 +8,7 @@ django.setup()
 
 from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # Optional: reuse Django settings / models
@@ -50,6 +51,11 @@ app.include_router(dashboard.router, prefix="/api")
 from django.core.wsgi import get_wsgi_application
 from fastapi.middleware.wsgi import WSGIMiddleware
 app.mount("/admin", WSGIMiddleware(get_wsgi_application()))
+
+# Serve static files (ensure 'staticfiles' directory exists after running collectstatic)
+import os
+if os.path.exists("staticfiles"):
+    app.mount("/static", StaticFiles(directory="staticfiles"), name="static")
 
 
 
