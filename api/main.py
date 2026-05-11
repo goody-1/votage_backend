@@ -1,4 +1,11 @@
 # yourproject/api/main.py
+import os
+import django
+
+# Initialize Django before any other imports
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "church.settings")
+django.setup()
+
 from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
