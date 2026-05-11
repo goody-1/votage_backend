@@ -25,6 +25,8 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
+from starlette.middleware.sessions import SessionMiddleware
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -33,6 +35,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add Session middleware for OAuth
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 
 # Include each router – they will be mounted under /api
 app.include_router(auth.router, prefix="/api")
