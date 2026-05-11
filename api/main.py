@@ -53,9 +53,9 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 app.mount("/admin", WSGIMiddleware(get_wsgi_application()))
 
 # Serve static files (ensure 'staticfiles' directory exists after running collectstatic)
-import os
-if os.path.exists("staticfiles"):
-    app.mount("/static", StaticFiles(directory="staticfiles"), name="static")
+from django.conf import settings
+if settings.STATIC_ROOT.exists():
+    app.mount("/static", StaticFiles(directory=str(settings.STATIC_ROOT)), name="static")
 
 
 
