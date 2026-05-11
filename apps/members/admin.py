@@ -15,19 +15,17 @@ class MemberAdmin(admin.ModelAdmin):
         'phone_number',
         'email',
         'gender',
-        'member_status',
         'date_joined',
     )
-    list_filter = ('member_status', 'gender', 'date_joined')
-    search_fields = ('first_name', 'last_name', 'phone', 'email')
+    list_filter = ('gender', 'date_joined')
+    search_fields = ('first_name', 'last_name', 'phone_number', 'email')
     # readonly_fields = ('date_joined',)
     fieldsets = (
         ('Personal Information', {
             'fields': (
                 ('first_name', 'last_name'),
-                ('phone', 'email'),
+                ('phone_number', 'email'),
                 ('birthday', 'gender'),
-                'member_status',
             )
         }),
         ('Membership Dates', {
