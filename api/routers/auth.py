@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from django.contrib.auth import authenticate
 from ..deps import create_access_token
-from ..schemas.auth import Token, UserOut
+from ..schemas.auth import Token, UserOut, RegistrationResponse
 
 router = APIRouter(
     prefix="/auth",
@@ -28,19 +28,24 @@ from ..deps import get_current_user, get_password_hash
 from ..schemas.auth import Token, UserOut, UserCreate
 from django.contrib.auth.models import User
 
-@router.post("/register", response_model=UserOut)
+@router.post("/register", response_model=RegistrationResponse)
 def register(user_in: UserCreate):
     if User.objects.filter(username=user_in.username).exists():
         raise HTTPException(status_code=400, detail="Username already exists")
     if User.objects.filter(email=user_in.email).exists():
         raise HTTPException(status_code=400, detail="Email already exists")
     
+    # Create user with is_active=False for admin approval
     user = User.objects.create_user(
         username=user_in.username,
         email=user_in.email,
-        password=user_in.password
+        password=user_in.password,
+        is_active=False
     )
-    return user
+    return {
+        "user": user,
+        "message": "Account created successfully. Please wait for an administrator to approve your access."
+    }
 
 @router.get("/me", response_model=UserOut)
 def get_me(current_user=Depends(get_current_user)):
