@@ -14,8 +14,7 @@ from pathlib import Path
 
 import os
 from dotenv import load_dotenv
-
-from urllib.parse import urlparse, parse_qsl
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -84,32 +83,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'church.wsgi.application'
 
-tmpPostgres = urlparse(os.getenv("DATABASE_URL"))
-
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME':  os.getenv("DB_NAME"),
-    #     'USER': os.getenv("DB_USER"),
-    #     'PASSWORD': os.getenv("DB_PASSWORD"),
-    #     'HOST': os.getenv("DB_HOST"),
-    #     'PORT': os.getenv("DB_PORT", "5432"),
-    #     'OPTIONS': {
-    #         'sslmode': os.getenv("DB_SSLMODE", "require"),  # Neon requires SSL
-    #     },
-    # }
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': tmpPostgres.path.replace('/', ''),
-        'USER': tmpPostgres.username,
-        'PASSWORD': tmpPostgres.password,
-        'HOST': tmpPostgres.hostname,
-        'PORT': 5432,
-        'OPTIONS': dict(parse_qsl(tmpPostgres.query)),
-    }
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 
