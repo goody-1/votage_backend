@@ -89,7 +89,7 @@ WSGI_APPLICATION = 'church.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL'),
-        conn_max_age=600,
+        conn_max_age=0, # Changed from 600 to 0
         conn_health_checks=True,
     )
 }

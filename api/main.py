@@ -31,7 +31,7 @@ from starlette.middleware.sessions import SessionMiddleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,  # Set to False to allow "*" origins
     allow_methods=["*"],
     allow_headers=["*"],
 )
