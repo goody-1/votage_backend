@@ -6,9 +6,10 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "church.settings")
 django.setup()
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from django import db
 from pydantic import BaseModel
 
 # Optional: reuse Django settings / models
@@ -38,6 +39,17 @@ app.add_middleware(
 
 # Add Session middleware for OAuth
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+
+@app.middleware("http")
+async def close_db_connections(request: Request, call_next):
+    # Close connections before the request to ensure a fresh start
+    db.close_old_connections()
+    try:
+        response = await call_next(request)
+    finally:
+        # Close connections after the request to release them
+        db.close_old_connections()
+    return response
 
 # Include each router – they will be mounted under /api
 app.include_router(auth.router, prefix="/api")
