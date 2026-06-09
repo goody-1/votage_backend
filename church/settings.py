@@ -94,7 +94,7 @@ DATABASES = {
     )
 }
 DATABASES['default']['OPTIONS'] = DATABASES['default'].get('OPTIONS', {})
-DATABASES['default']['OPTIONS']['disable_server_side_cursors'] = True
+DATABASES['default']['OPTIONS']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 
 # Password validation
