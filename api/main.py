@@ -18,12 +18,20 @@ from django.conf import settings
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import home, auth, members, pastors, services, attendance, events, connect_groups, growth_track, departments, dashboard
 
+def db_cleanup():
+    db.close_old_connections()
+    try:
+        yield
+    finally:
+        db.close_old_connections()
+
 app = FastAPI(
     title="Votage Church API",
     description="Manage church data like members, attendance, growth tracks, and more.",
     version="0.1.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
+    dependencies=[Depends(db_cleanup)]
 )
 
 from starlette.middleware.sessions import SessionMiddleware

@@ -52,8 +52,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     
     try:
-        # Wrap the Django ORM call with sync_to_async
-        user = await sync_to_async(User.objects.get)(pk=user_id)
+        # Wrap the Django ORM call and guarantee connection cleanup on the worker thread
+        def _get_user():
+            from django import db
+            try:
+                return User.objects.get(pk=user_id)
+            finally:
+                db.close_old_connections()
+        user = await sync_to_async(_get_user)()
         if not user.is_active:
             raise HTTPException(status_code=400, detail="Inactive user")
         return user

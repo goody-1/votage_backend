@@ -8,6 +8,7 @@ import os
 from django.conf import settings
 from fastapi import Request
 from starlette.responses import RedirectResponse
+from asgiref.sync import sync_to_async
 
 oauth = OAuth()
 oauth.register(
@@ -27,6 +28,13 @@ router = APIRouter(
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate(username=form_data.username, password=form_data.password)
     if not user:
+        # Check if the user exists but is inactive to give a clearer error message
+        exists_inactive = User.objects.filter(username=form_data.username, is_active=False).exists()
+        if exists_inactive:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is pending administrator approval.",
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -56,9 +64,14 @@ def register(user_in: UserCreate):
         password=user_in.password,
         is_active=False
     )
+    
+    message = "Account created successfully."
+    if not user.is_active:
+        message += " Please wait for an administrator to approve your access."
+        
     return {
         "user": user,
-        "message": "Account created successfully. Please wait for an administrator to approve your access."
+        "message": message
     }
 
 @router.get("/me", response_model=UserOut)
@@ -88,14 +101,22 @@ async def google_callback(request: Request):
     email = user_info.get('email')
     username = user_info.get('name', email.split('@')[0])
     
-    # Get or create user
-    user, created = User.objects.get_or_create(
-        email=email,
-        defaults={
-            'username': username,
-            'is_active': False  # Still requires admin approval!
-        }
-    )
+    # Get or create user inside a worker thread and ensure connection is closed
+    def _get_or_create_user():
+        from django import db
+        try:
+            return User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': username,
+                    'is_active': False
+                    # 'is_active': settings.DEBUG  # Active by default in dev, pending approval in prod
+                }
+            )
+        finally:
+            db.close_old_connections()
+            
+    user, created = await sync_to_async(_get_or_create_user)()
     
     if not user.is_active:
         return {
