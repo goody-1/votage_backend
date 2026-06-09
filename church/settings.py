@@ -93,8 +93,7 @@ DATABASES = {
         conn_health_checks=True,
     )
 }
-DATABASES['default']['OPTIONS'] = DATABASES['default'].get('OPTIONS', {})
-DATABASES['default']['OPTIONS']['DISABLE_SERVER_SIDE_CURSORS'] = True
+DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 
 # Password validation
