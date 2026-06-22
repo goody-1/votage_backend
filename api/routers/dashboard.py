@@ -4,11 +4,15 @@ from apps.attendance.models import Attendance
 from apps.growth_track.models import GrowthTrack
 from apps.events.models import Event
 from apps.departments.models import Department
-from ..schemas.dashboard import DashboardStats, DashboardSummary, ChartDataPoint
+from ..schemas.dashboard import DashboardStats, DashboardSummary, ChartDataPoint, AttendanceDashboardResponse
 from ..schemas.members import MemberOut
 from ..schemas.events import EventOut
 from ..deps import get_current_admin_user
 from django.utils import timezone
+from fastapi import Response
+import csv
+import io
+
 
 router = APIRouter(
     prefix="/dashboard",
@@ -109,4 +113,95 @@ def get_dashboard_summary():
         upcoming_events=upcoming_events,
         attendance_chart=attendance_chart,
         member_growth_chart=member_growth_chart
+    )
+
+@router.get("/attendance", response_model=AttendanceDashboardResponse)
+def get_attendance_dashboard(weeks: int = 5):
+    today = timezone.now().date()
+    start_date = today - timezone.timedelta(weeks=weeks)
+    from django.db.models import Count
+    from apps.members.models import FirstTimers
+    
+    # Overall queries for stats
+    total_attendance = Attendance.objects.count()
+    active_members = Attendance.objects.values('member').distinct().count()
+    returning_members = Attendance.objects.values('member').annotate(total=Count('id')).filter(total__gt=1).count()
+    new_visitors = FirstTimers.objects.count()
+    
+    stats = {
+        "total_attendance": total_attendance,
+        "active_members": active_members,
+        "returning_members": returning_members,
+        "new_visitors": new_visitors
+    }
+    
+    # Chart Data: Attendance per Sunday service
+    # week_day=1 means Sunday in Django ORM
+    period_attendance = Attendance.objects.filter(service_date__gte=start_date)
+    sunday_attendances = (
+        period_attendance.filter(service_date__week_day=1)
+        .values('service_date')
+        .annotate(value=Count('id'))
+        .order_by('service_date')
+    )
+    
+    chart_data = [
+        ChartDataPoint(
+            label=item['service_date'].strftime("%b %d"),
+            value=float(item['value'])
+        )
+        for item in sunday_attendances
+    ]
+    
+    return AttendanceDashboardResponse(
+        stats=stats,
+        attendance_per_sunday_service_chart=chart_data
+    )
+
+@router.get("/report/attendance")
+def export_attendance_report(frequency: str = "monthly"):
+    from django.db.models.functions import TruncMonth, TruncWeek
+    from django.db.models import Count
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    if frequency == "daily":
+        writer.writerow(["Date", "Total Attendance", "Active Members"])
+        qs = Attendance.objects.values('service_date').annotate(total=Count('id'), active=Count('member', distinct=True)).order_by('-service_date')
+        for row in qs:
+            writer.writerow([row['service_date'], row['total'], row['active']])
+            
+    elif frequency == "weekly":
+        writer.writerow(["Week Starting", "Total Attendance", "Active Members"])
+        qs = Attendance.objects.annotate(week=TruncWeek('service_date')).values('week').annotate(total=Count('id'), active=Count('member', distinct=True)).order_by('-week')
+        for row in qs:
+            writer.writerow([row['week'].date() if row['week'] else '', row['total'], row['active']])
+            
+    else: # monthly
+        writer.writerow(["Month", "Total Attendance", "Active Members"])
+        qs = Attendance.objects.annotate(month=TruncMonth('service_date')).values('month').annotate(total=Count('id'), active=Count('member', distinct=True)).order_by('-month')
+        for row in qs:
+            writer.writerow([row['month'].date() if row['month'] else '', row['total'], row['active']])
+            
+    return Response(
+        content=output.getvalue(), 
+        media_type="text/csv", 
+        headers={"Content-Disposition": f"attachment; filename=attendance_{frequency}.csv"}
+    )
+
+@router.get("/report/birthdays")
+def export_birthdays_report():
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["First Name", "Last Name", "Phone", "Email", "Birthday"])
+    
+    qs = Member.objects.exclude(birthday__isnull=True).exclude(birthday='').order_by('birthday')
+    for m in qs:
+        writer.writerow([m.first_name, m.last_name, m.phone_number, m.email, m.birthday])
+        
+    return Response(
+        content=output.getvalue(), 
+        media_type="text/csv", 
+        headers={"Content-Disposition": "attachment; filename=birthdays.csv"}
     )

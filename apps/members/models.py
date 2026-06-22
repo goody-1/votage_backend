@@ -15,6 +15,7 @@ class Member(models.Model):
     phone_number = models.CharField(max_length=32, unique=True)
     email = models.EmailField(unique=True, null=True, blank=True)
     gender = models.CharField(max_length=32, null=True, blank=True)
+    birthday = YearlessDateField(max_length=4, null=True, blank=True)
     date_joined = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
