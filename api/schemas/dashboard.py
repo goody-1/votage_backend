@@ -25,3 +25,14 @@ class DashboardSummary(BaseModel):
     upcoming_events: List[EventOut]
     attendance_chart: List[ChartDataPoint]
     member_growth_chart: List[ChartDataPoint]
+
+class AttendanceDashboardStats(BaseModel):
+    total_attendance: int
+    active_members: int
+    returning_members: int
+    new_visitors: int
+
+class AttendanceDashboardResponse(BaseModel):
+    stats: AttendanceDashboardStats
+    attendance_per_sunday_service_chart: List[ChartDataPoint]
+
