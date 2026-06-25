@@ -23,7 +23,7 @@ class Member(models.Model):
     
     class Meta:
         db_table = 'members'  # This points Django to your existing table
-        managed = False       # This tells Django not to try and change this table
+        managed = True       # This tells Django not to try and change this table
 
 
 class FirstTimers(models.Model):
