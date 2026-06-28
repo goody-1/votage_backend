@@ -176,13 +176,17 @@ def export_attendance_report(frequency: str = "monthly"):
         writer.writerow(["Week Starting", "Total Attendance", "Active Members"])
         qs = Attendance.objects.annotate(week=TruncWeek('service_date')).values('week').annotate(total=Count('id'), active=Count('member', distinct=True)).order_by('-week')
         for row in qs:
-            writer.writerow([row['week'].date() if row['week'] else '', row['total'], row['active']])
+            week_val = row['week']
+            week_str = week_val.date() if hasattr(week_val, 'date') else (week_val or '')
+            writer.writerow([week_str, row['total'], row['active']])
             
     else: # monthly
         writer.writerow(["Month", "Total Attendance", "Active Members"])
         qs = Attendance.objects.annotate(month=TruncMonth('service_date')).values('month').annotate(total=Count('id'), active=Count('member', distinct=True)).order_by('-month')
         for row in qs:
-            writer.writerow([row['month'].date() if row['month'] else '', row['total'], row['active']])
+            month_val = row['month']
+            month_str = month_val.date() if hasattr(month_val, 'date') else (month_val or '')
+            writer.writerow([month_str, row['total'], row['active']])
             
     return Response(
         content=output.getvalue(), 
@@ -196,7 +200,7 @@ def export_birthdays_report():
     writer = csv.writer(output)
     writer.writerow(["First Name", "Last Name", "Phone", "Email", "Birthday"])
     
-    qs = Member.objects.exclude(birthday__isnull=True).exclude(birthday='').order_by('birthday')
+    qs = Member.objects.exclude(birthday__isnull=True).order_by('birthday')
     for m in qs:
         writer.writerow([m.first_name, m.last_name, m.phone_number, m.email, m.birthday])
         
