@@ -6,6 +6,8 @@ from ..schemas.members import MemberCreate, MemberUpdate, MemberOut, FirstTimerC
 from ..pagination import PaginatedResponse, paginate
 from ..deps import get_current_admin_user
 
+from uuid import UUID
+
 router = APIRouter(
     prefix="/members",
     tags=["Members"],
@@ -19,6 +21,7 @@ def list_members(
     search: Optional[str] = None,
     status: Optional[str] = None,
     gender: Optional[str] = None,
+    is_worker: Optional[bool] = None,
 ):
     queryset = Member.objects.all().order_by("-id")
     
@@ -32,6 +35,11 @@ def list_members(
     
     if gender:
         queryset = queryset.filter(gender=gender)
+
+    if is_worker is True:
+        queryset = queryset.filter(departmentmembership__is_active=True).distinct()
+    elif is_worker is False:
+        queryset = queryset.exclude(departmentmembership__is_active=True)
     
     paginated_data = paginate(queryset, page, page_size)
     paginated_data["results"] = [MemberOut.from_orm(m) for m in paginated_data["results"]]
@@ -43,7 +51,7 @@ def create_member(member_in: MemberCreate):
     return MemberOut.from_orm(member)
 
 @router.get("/{member_id}", response_model=MemberOut)
-def get_member(member_id: int):
+def get_member(member_id: UUID):
     try:
         member = Member.objects.get(pk=member_id)
         return MemberOut.from_orm(member)
@@ -51,7 +59,7 @@ def get_member(member_id: int):
         raise HTTPException(status_code=404, detail="Member not found")
 
 @router.patch("/{member_id}", response_model=MemberOut)
-def update_member(member_id: int, member_in: MemberUpdate):
+def update_member(member_id: UUID, member_in: MemberUpdate):
     try:
         member = Member.objects.get(pk=member_id)
         update_data = member_in.dict(exclude_unset=True)
@@ -63,7 +71,7 @@ def update_member(member_id: int, member_in: MemberUpdate):
         raise HTTPException(status_code=404, detail="Member not found")
 
 @router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_member(member_id: int):
+def delete_member(member_id: UUID):
     try:
         member = Member.objects.get(pk=member_id)
         member.delete()

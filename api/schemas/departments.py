@@ -78,8 +78,10 @@ class UnitOut(UnitBase):
             data.unit_head_name = f"{obj.unit_head.first_name} {obj.unit_head.last_name}"
         return data
 
+from uuid import UUID
+
 class DepartmentMembershipBase(BaseModel):
-    member_id: int
+    member_id: UUID
     department_id: int
     joined_at: date
     is_active: bool = True
@@ -90,6 +92,8 @@ class DepartmentMembershipCreate(DepartmentMembershipBase):
 class DepartmentMembershipOut(DepartmentMembershipBase):
     id: int
     member_name: str
+    department_name: str
+    directorate_name: str
 
     class Config:
         from_attributes = True
@@ -98,6 +102,8 @@ class DepartmentMembershipOut(DepartmentMembershipBase):
     def from_orm(cls, obj):
         data = super().from_orm(obj)
         data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
+        data.department_name = obj.department.name
+        data.directorate_name = obj.department.directorate.name
         return data
 
 class UnitMembershipBase(BaseModel):

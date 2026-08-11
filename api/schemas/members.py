@@ -4,6 +4,17 @@ from datetime import date, datetime
 
 from uuid import UUID
 
+class MemberDepartmentOut(BaseModel):
+    id: int
+    name: str
+    directorate_id: int
+    directorate_name: str
+    joined_at: Optional[date] = None
+    is_active: bool = True
+
+    class Config:
+        from_attributes = True
+
 class MemberBase(BaseModel):
     first_name: str
     last_name: str
@@ -26,6 +37,8 @@ class MemberUpdate(BaseModel):
 class MemberOut(MemberBase):
     id: UUID
     full_name: Optional[str] = None
+    is_worker: bool = False
+    departments: List[MemberDepartmentOut] = []
     department_name: Optional[str] = "Regular member"
 
     class Config:
@@ -33,6 +46,10 @@ class MemberOut(MemberBase):
 
     @classmethod
     def from_orm(cls, obj):
+        deps = cls.get_departments(obj)
+        is_worker = len(deps) > 0
+        dept_name_str = ", ".join([d.name for d in deps]) if deps else "Regular member"
+
         return cls(
             id=obj.id,
             first_name=obj.first_name,
@@ -42,19 +59,32 @@ class MemberOut(MemberBase):
             email=obj.email,
             gender=obj.gender,
             date_joined=obj.date_joined,
-            department_name=cls.get_department(obj)
+            is_worker=is_worker,
+            departments=deps,
+            department_name=dept_name_str
         )
 
     @staticmethod
-    def get_department(obj):
+    def get_departments(obj):
         try:
             from apps.departments.models import DepartmentMembership
-            membership = DepartmentMembership.objects.filter(member=obj, is_active=True).first()
-            if membership:
-                return membership.department.name
+            memberships = DepartmentMembership.objects.filter(
+                member=obj, is_active=True
+            ).select_related("department", "department__directorate")
+            
+            res = []
+            for m in memberships:
+                res.append(MemberDepartmentOut(
+                    id=m.department.id,
+                    name=m.department.name,
+                    directorate_id=m.department.directorate.id,
+                    directorate_name=m.department.directorate.name,
+                    joined_at=m.joined_at,
+                    is_active=m.is_active
+                ))
+            return res
         except Exception:
-            pass
-        return "Regular member"
+            return []
 
 class FirstTimerBase(BaseModel):
     member_id: int

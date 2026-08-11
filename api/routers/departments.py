@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from apps.departments.models import Directorate, Department, Unit, DepartmentMembership, UnitMembership
 from ..schemas.departments import (
@@ -46,10 +46,20 @@ def create_unit(u_in: UnitCreate):
     u = Unit.objects.create(**u_in.dict())
     return UnitOut.from_orm(u)
 
+from uuid import UUID
+
 # Memberships
 @router.get("/memberships/", response_model=List[DepartmentMembershipOut])
-def list_dept_memberships():
-    return [DepartmentMembershipOut.from_orm(m) for m in DepartmentMembership.objects.all().select_related("member", "department")]
+def list_dept_memberships(
+    member_id: Optional[UUID] = None,
+    department_id: Optional[int] = None
+):
+    queryset = DepartmentMembership.objects.all().select_related("member", "department", "department__directorate")
+    if member_id:
+        queryset = queryset.filter(member_id=member_id)
+    if department_id:
+        queryset = queryset.filter(department_id=department_id)
+    return [DepartmentMembershipOut.from_orm(m) for m in queryset]
 
 @router.post("/memberships/", response_model=DepartmentMembershipOut)
 def join_department(m_in: DepartmentMembershipCreate):
