@@ -1,11 +1,12 @@
 from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime, date
+from uuid import UUID
 
 class DirectorateBase(BaseModel):
     name: str
     description: Optional[str] = ""
-    director_id: Optional[int] = None
+    director_id: Optional[UUID] = None
 
 class DirectorateCreate(DirectorateBase):
     pass
@@ -29,8 +30,8 @@ class DepartmentBase(BaseModel):
     name: str
     description: Optional[str] = ""
     directorate_id: int
-    hod_id: Optional[int] = None
-    assistant_hod_id: Optional[int] = None
+    hod_id: Optional[UUID] = None
+    assistant_hod_id: Optional[UUID] = None
 
 class DepartmentCreate(DepartmentBase):
     pass
@@ -56,7 +57,7 @@ class UnitBase(BaseModel):
     name: str
     description: Optional[str] = ""
     department_id: int
-    unit_head_id: Optional[int] = None
+    unit_head_id: Optional[UUID] = None
 
 class UnitCreate(UnitBase):
     pass
@@ -77,8 +78,6 @@ class UnitOut(UnitBase):
         if obj.unit_head:
             data.unit_head_name = f"{obj.unit_head.first_name} {obj.unit_head.last_name}"
         return data
-
-from uuid import UUID
 
 class DepartmentMembershipBase(BaseModel):
     member_id: UUID
@@ -107,7 +106,7 @@ class DepartmentMembershipOut(DepartmentMembershipBase):
         return data
 
 class UnitMembershipBase(BaseModel):
-    member_id: int
+    member_id: UUID
     unit_id: int
     joined_at: date
     is_active: bool = True
