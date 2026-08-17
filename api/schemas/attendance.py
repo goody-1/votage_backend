@@ -12,8 +12,8 @@ class AttendanceCreate(AttendanceBase):
 class AttendanceOut(AttendanceBase):
     id: int
     created_at: datetime
-    member_name: str
-    service_date: date
+    member_name: Optional[str] = None
+    service_date: Optional[date] = None
 
     class Config:
         from_attributes = True
@@ -21,6 +21,8 @@ class AttendanceOut(AttendanceBase):
     @classmethod
     def from_orm(cls, obj):
         data = super().from_orm(obj)
-        data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
-        data.service_date = obj.service.service_date
+        if hasattr(obj, "member") and obj.member:
+            data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
+        if hasattr(obj, "service") and obj.service:
+            data.service_date = obj.service.service_date
         return data

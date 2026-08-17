@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime, time, date
+from uuid import UUID
 
 class ConnectGroupBase(BaseModel):
     name: str
@@ -26,7 +27,7 @@ class ConnectGroupOut(ConnectGroupBase):
 
 class ConnectGroupMemberBase(BaseModel):
     connect_group_id: int
-    member_id: int
+    member_id: UUID
     joined_at: date
     left_at: Optional[date] = None
 
@@ -35,7 +36,7 @@ class ConnectGroupMemberCreate(ConnectGroupMemberBase):
 
 class ConnectGroupMemberOut(ConnectGroupMemberBase):
     id: int
-    member_name: str
+    member_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -43,7 +44,8 @@ class ConnectGroupMemberOut(ConnectGroupMemberBase):
     @classmethod
     def from_orm(cls, obj):
         data = super().from_orm(obj)
-        data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
+        if hasattr(obj, "member") and obj.member:
+            data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
         return data
 
 class ConnectGroupPastorBase(BaseModel):
@@ -57,7 +59,7 @@ class ConnectGroupPastorCreate(ConnectGroupPastorBase):
 
 class ConnectGroupPastorOut(ConnectGroupPastorBase):
     id: int
-    pastor_name: str
+    pastor_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -65,5 +67,6 @@ class ConnectGroupPastorOut(ConnectGroupPastorBase):
     @classmethod
     def from_orm(cls, obj):
         data = super().from_orm(obj)
-        data.pastor_name = f"{obj.pastor.first_name} {obj.pastor.last_name}"
+        if hasattr(obj, "pastor") and obj.pastor:
+            data.pastor_name = f"{obj.pastor.first_name} {obj.pastor.last_name}"
         return data

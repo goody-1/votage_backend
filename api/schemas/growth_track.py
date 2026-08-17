@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime, date
+from uuid import UUID
 
 class GrowthTrackBase(BaseModel):
     cohort_name: str
@@ -20,7 +21,7 @@ class GrowthTrackUpdate(BaseModel):
 class GrowthTrackOut(GrowthTrackBase):
     id: int
     created_at: datetime
-    enrollment_count: int
+    enrollment_count: Optional[int] = 0
 
     class Config:
         from_attributes = True
@@ -28,12 +29,13 @@ class GrowthTrackOut(GrowthTrackBase):
     @classmethod
     def from_orm(cls, obj):
         data = super().from_orm(obj)
-        data.enrollment_count = obj.growthtrackenrollment_set.count()
+        if hasattr(obj, "growthtrackenrollment_set"):
+            data.enrollment_count = obj.growthtrackenrollment_set.count()
         return data
 
 class GrowthTrackEnrollmentBase(BaseModel):
     growth_track_id: int
-    member_id: int
+    member_id: UUID
     enrollment_date: date
     status: str
     graduation_date: Optional[date] = None
@@ -43,7 +45,7 @@ class GrowthTrackEnrollmentCreate(GrowthTrackEnrollmentBase):
 
 class GrowthTrackEnrollmentOut(GrowthTrackEnrollmentBase):
     id: int
-    member_name: str
+    member_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -51,5 +53,6 @@ class GrowthTrackEnrollmentOut(GrowthTrackEnrollmentBase):
     @classmethod
     def from_orm(cls, obj):
         data = super().from_orm(obj)
-        data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
+        if hasattr(obj, "member") and obj.member:
+            data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
         return data

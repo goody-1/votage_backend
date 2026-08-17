@@ -39,7 +39,7 @@ class DepartmentCreate(DepartmentBase):
 class DepartmentOut(DepartmentBase):
     id: int
     created_at: datetime
-    directorate_name: str
+    directorate_name: Optional[str] = None
     hod_name: Optional[str] = None
 
     class Config:
@@ -48,8 +48,9 @@ class DepartmentOut(DepartmentBase):
     @classmethod
     def from_orm(cls, obj):
         data = super().from_orm(obj)
-        data.directorate_name = obj.directorate.name
-        if obj.hod:
+        if hasattr(obj, "directorate") and obj.directorate:
+            data.directorate_name = obj.directorate.name
+        if hasattr(obj, "hod") and obj.hod:
             data.hod_name = f"{obj.hod.first_name} {obj.hod.last_name}"
         return data
 
@@ -65,7 +66,7 @@ class UnitCreate(UnitBase):
 class UnitOut(UnitBase):
     id: int
     created_at: datetime
-    department_name: str
+    department_name: Optional[str] = None
     unit_head_name: Optional[str] = None
 
     class Config:
@@ -74,8 +75,9 @@ class UnitOut(UnitBase):
     @classmethod
     def from_orm(cls, obj):
         data = super().from_orm(obj)
-        data.department_name = obj.department.name
-        if obj.unit_head:
+        if hasattr(obj, "department") and obj.department:
+            data.department_name = obj.department.name
+        if hasattr(obj, "unit_head") and obj.unit_head:
             data.unit_head_name = f"{obj.unit_head.first_name} {obj.unit_head.last_name}"
         return data
 
@@ -90,9 +92,9 @@ class DepartmentMembershipCreate(DepartmentMembershipBase):
 
 class DepartmentMembershipOut(DepartmentMembershipBase):
     id: int
-    member_name: str
-    department_name: str
-    directorate_name: str
+    member_name: Optional[str] = None
+    department_name: Optional[str] = None
+    directorate_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -100,9 +102,12 @@ class DepartmentMembershipOut(DepartmentMembershipBase):
     @classmethod
     def from_orm(cls, obj):
         data = super().from_orm(obj)
-        data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
-        data.department_name = obj.department.name
-        data.directorate_name = obj.department.directorate.name
+        if hasattr(obj, "member") and obj.member:
+            data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
+        if hasattr(obj, "department") and obj.department:
+            data.department_name = obj.department.name
+            if hasattr(obj.department, "directorate") and obj.department.directorate:
+                data.directorate_name = obj.department.directorate.name
         return data
 
 class UnitMembershipBase(BaseModel):
@@ -117,7 +122,7 @@ class UnitMembershipCreate(UnitMembershipBase):
 
 class UnitMembershipOut(UnitMembershipBase):
     id: int
-    member_name: str
+    member_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -125,5 +130,6 @@ class UnitMembershipOut(UnitMembershipBase):
     @classmethod
     def from_orm(cls, obj):
         data = super().from_orm(obj)
-        data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
+        if hasattr(obj, "member") and obj.member:
+            data.member_name = f"{obj.member.first_name} {obj.member.last_name}"
         return data
